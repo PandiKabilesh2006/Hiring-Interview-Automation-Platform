@@ -1,0 +1,502 @@
+# HRMS Hiring Module - Comprehensive QA Bug Report
+
+## Environment
+
+- Application: HRMS Hiring Module / AI Interview Platform
+- Branch: `ats+interview`
+- Runtime: Local development
+- URL: `http://localhost:3000`
+- Database: Local PostgreSQL Docker container
+- Testing Type: Manual functional QA
+
+## Severity Scale
+
+- Critical: Blocks a core workflow, causes interview failure, data loss, or prevents reliable use of a major module.
+- High: Major user-facing issue that affects hiring/interview integrity, candidate experience, or important business workflows.
+- Medium: Functional issue or confusing behavior with available workaround, or issue requiring product clarification.
+- Low: UI/layout polish issue that does not block the workflow but affects presentation quality.
+
+## Executive Summary
+
+Manual QA identified issues in candidate profile/resume handling, authentication routing, resume file support, interview chat behavior, proctoring enforcement, screen sharing validation, device setup, email delivery, and admin UI layout. The highest-risk areas are the interview experience and proctoring consistency, because these directly affect candidate evaluation reliability and interview integrity.
+
+All "Possible Cause" and "Possible Solution" sections are hypotheses based on observed behavior and code structure. They should be validated during debugging before implementation.
+
+---
+
+## BUG-001: Candidate Resume Update Does Not Reliably Refresh Profile/Application State
+
+Severity: High
+Area: Candidate Portal / My Profile / Job Applications
+
+Business Impact:
+Candidates may be unable to correct or update their resume after initial upload. This can cause outdated candidate information to be used for applications or ATS scoring, which may affect shortlisting accuracy.
+
+Steps to Reproduce:
+1. Log in as a candidate.
+2. Open My Profile.
+3. Upload a resume and save/update the profile.
+4. Attempt to replace the resume by uploading or dropping a different resume file.
+5. Save the profile or compute ATS again.
+6. Attempt to apply to a job again or verify whether the updated resume affects the existing application.
+
+Expected Result:
+- The new resume should parse successfully.
+- The displayed resume filename/text should update.
+- Candidate profile state should reflect the latest resume.
+- If existing applications should use the updated resume, the app should refresh/update application context.
+- If reapplication is intentionally blocked, the UI should clearly state that duplicate applications are not allowed and explain whether the updated profile will be considered.
+
+Actual Result:
+- Replacing an already uploaded resume does not reliably load/update.
+- Candidate cannot apply again after changing the resume.
+- The UI does not clearly explain whether this is a bug or an intentional duplicate-application rule.
+
+Possible Cause:
+- The file input may not reset after the first upload, so subsequent uploads may not trigger `onChange` reliably.
+- The candidate profile API may retain previous resume fields because of `COALESCE` behavior.
+- The job application table likely has a uniqueness constraint for `(candidate_id, job_id)`, blocking repeat applications regardless of resume changes.
+- The application flow may not have a concept of "resubmission" or "refresh application with latest resume."
+
+Possible Solution:
+- Clear the file input after parsing so the same/new file can be selected repeatedly.
+- Ensure new `resumeText` and `resumeFilename` overwrite previous values when explicitly provided.
+- Add clear UI states for parsing, success, and parse failure.
+- Decide product behavior for repeat applications:
+  - Option A: Allow application resubmission/versioning after resume update.
+  - Option B: Block duplicates but display a clear message.
+  - Option C: Add "Update application with latest resume" if existing applications should be refreshed.
+- After save/upload, refetch `/api/candidate/profile` or update local state from the API response.
+
+Suggested Files to Inspect:
+- `src/app/(portal)/candidate/profile/page.tsx`
+- `src/app/api/(candidate)/candidate/profile/route.ts`
+- `src/app/api/(candidate)/parse-resume/route.ts`
+- `src/app/api/(candidate)/candidate/apply/route.ts`
+- `migrations/004_candidate_dashboard.sql`
+
+---
+
+## BUG-002: Candidate Credentials Are Accepted Through Admin Login
+
+Severity: Medium
+Area: Authentication / Role Routing
+
+Business Impact:
+This creates confusion around admin vs candidate access boundaries. Even if candidate users are eventually routed to the candidate portal, accepting candidate credentials on the admin login page weakens the clarity of role-based access.
+
+Steps to Reproduce:
+1. Open the admin login page.
+2. Enter valid candidate credentials.
+3. Submit the login form.
+
+Expected Result:
+The admin login page should either reject candidate credentials or explicitly redirect candidate users to the candidate portal with clear role-aware behavior.
+
+Actual Result:
+Candidate credentials are accepted through the admin login flow and route into the candidate module.
+
+Possible Cause:
+- A shared NextAuth credentials provider authenticates all roles.
+- Role-specific access is handled after login rather than at login entry point.
+- Login redirect logic may not distinguish candidate vs admin/interviewer users clearly enough.
+
+Possible Solution:
+- Add role-based redirect after successful login:
+  - `candidate` -> `/candidate`
+  - `interviewer` / `admin` -> admin dashboard/module
+- Alternatively, reject candidate role on the admin login page and direct candidates to `/candidate-auth`.
+- Ensure middleware blocks candidate users from accessing admin-only routes.
+- Update UI labels so candidates and admins understand which login page to use.
+
+Suggested Files to Inspect:
+- `src/lib/auth.ts`
+- `src/middleware.ts`
+- `src/app/(auth)/login/page.tsx`
+- `src/app/(auth)/candidate-auth/page.tsx`
+
+---
+
+## BUG-003: Legacy `.doc` Resume Files Cannot Be Parsed Despite Upload Expectations
+
+Severity: Medium
+Area: Resume Upload / Parsing
+
+Business Impact:
+Candidates may upload older Word resumes and receive poor or unclear failure behavior. This can create friction in candidate onboarding and profile setup.
+
+Steps to Reproduce:
+1. Upload a resume in legacy `.doc` format.
+2. Attempt to parse or submit the file.
+
+Expected Result:
+Either `.doc` files should parse successfully, or the UI should clearly state that only PDF, DOCX, and TXT files are supported.
+
+Actual Result:
+`.doc` files cannot be parsed.
+
+Possible Cause:
+- The parser appears to support PDF, DOCX, and TXT, but not old binary Word `.doc` files.
+- Some upload accept attributes or UI copy may still imply `.doc` support.
+
+Possible Solution:
+- Remove `.doc` from accepted file types if unsupported.
+- Update UI copy to say "PDF, DOCX, or TXT only."
+- If `.doc` support is required, add a conversion/parsing path using a supported converter/service.
+- Add a clear user-facing parse failure message.
+
+Suggested Files to Inspect:
+- `src/app/(portal)/candidate/profile/page.tsx`
+- `src/app/(platform)/new/page.tsx`
+- `src/app/api/(candidate)/parse-resume/route.ts`
+- `src/app/api/(interview)/create-interview/route.ts`
+
+---
+
+## BUG-004: AI Advances While Candidate Is Still Typing
+
+Severity: High
+Area: Interview Chat / Timing Logic
+
+Business Impact:
+The AI may skip or interrupt candidate responses, leading to incomplete answers and unfair evaluation. This is especially important if typed chat is an intended accessibility or fallback mode.
+
+Steps to Reproduce:
+1. Start an interview.
+2. Use typed chat input instead of voice input.
+3. Begin composing a response.
+4. Take longer than the apparent idle/timeout threshold before submitting.
+
+Expected Result:
+If the candidate is actively typing, the AI should wait for the submitted answer before moving on.
+
+Actual Result:
+The AI moves on to the next question after a threshold even while the candidate is typing.
+
+Possible Cause:
+- The interview room may have an idle/auto-prompt timer that does not account for focused/non-empty typed input.
+- Timer reset may be based only on submitted messages or voice transcript events, not keyboard activity.
+
+Possible Solution:
+- Pause idle/auto-advance timers while the chat input is focused or non-empty.
+- Reset waiting timers on keypress/input changes.
+- Add an `isTyping` state that prevents auto-advance until the input is submitted, cleared, or inactive for a longer grace period.
+- Confirm whether voice mode has equivalent protections while candidate speech is in progress.
+
+Suggested Files to Inspect:
+- `src/components/InterviewRoom.tsx`
+- `src/app/api/(ai)/ai-speak/route.ts`
+- `src/app/api/(ai)/ai-speak-stream/route.ts`
+
+---
+
+## BUG-005: Interview AI Stops Responding Mid-Interview
+
+Severity: Critical
+Area: Interview Chat / AI Response
+
+Business Impact:
+This can block completion of the interview and invalidate candidate evaluation. A stalled AI interviewer is a core workflow failure.
+
+Steps to Reproduce:
+1. Start an interview.
+2. Continue the conversation for many turns.
+3. Observe whether the AI stops responding even though the candidate continues speaking or typing.
+
+Expected Result:
+The AI should continue responding until:
+- the interview time limit is reached,
+- the AI explicitly ends the interview,
+- the candidate ends the interview,
+- or the app shows a clear error/recovery state.
+
+Actual Result:
+The AI can stop responding mid-interview. One observed run continued for roughly 25 messages, so this does not appear to be a fixed 10-message limit.
+
+Possible Cause:
+- Streaming response handling may fail without resetting frontend state.
+- API/TTS errors may not be surfaced to the UI.
+- The UI may remain stuck in an "AI thinking" state.
+- Rate limiting, timeout handling, or proctoring enforcement may return an error that the frontend does not handle.
+- The `/api/ai-speak-stream` or `/api/ai-speak` response may fail while the candidate UI still appears active.
+
+Possible Solution:
+- Add explicit client-side error handling for failed `/api/ai-speak`, `/api/ai-speak-stream`, and `/api/ai-response` calls.
+- Log response status and body for failed AI/TTS requests.
+- Ensure the UI always exits loading/thinking state when a stream fails.
+- Add a visible recovery state such as "AI response failed. Retry."
+- Check whether backend proctoring enforcement returns `403` and leaves the UI waiting indefinitely.
+- Add correlation IDs for interview request logs to trace failed turns.
+
+Suggested Files to Inspect:
+- `src/components/InterviewRoom.tsx`
+- `src/app/api/(ai)/ai-speak/route.ts`
+- `src/app/api/(ai)/ai-speak-stream/route.ts`
+- `src/app/api/(ai)/ai-response/route.ts`
+- `src/lib/rate-limit.ts`
+
+---
+
+## BUG-006: Proctoring Violation Counts and Termination Thresholds Are Inconsistent
+
+Severity: High
+Area: Interview / Proctoring Enforcement
+
+Clarification:
+This issue refers to inconsistent proctoring counts across the candidate-facing interview UI, backend/admin proctoring data, and possible termination behavior. For example, the interview UI may show a low count such as `3 out of 5 violations`, while backend/admin views show significantly more events/flags such as 23-24. This makes it unclear which count is authoritative.
+
+Business Impact:
+Inconsistent proctoring enforcement can unfairly terminate interviews or reduce trust in scorecards. It also makes the candidate-facing warning system unreliable.
+
+Steps to Reproduce:
+1. Start an interview.
+2. Trigger multiple proctoring events.
+3. Compare the visible interview violation counter with backend/admin proctoring event counts.
+4. Observe when the interview or chatbot stops responding.
+
+Expected Result:
+- Candidate-facing counter should match the enforceable strike count.
+- Backend/admin count should distinguish raw events from enforceable strikes.
+- Termination should occur exactly at the configured threshold.
+- UI messaging should accurately state the real threshold.
+
+Actual Result:
+- Candidate-facing UI can show a lower count such as `3 out of 5 violations`.
+- Backend/admin proctoring data can show around 23-24 events/flags.
+- The chatbot may stop responding despite the visible UI not indicating that the violation limit has been reached.
+- Another observation suggested termination around 12 violations, while UI messaging indicates 5.
+
+Possible Cause:
+- Frontend and backend may be counting different event types or severities.
+- Backend may enforce against all `flag` records while frontend displays only selected violation categories.
+- `NEXT_PUBLIC_MAX_PROCTORING_STRIKES`, `MAX_PROCTORING_STRIKES`, and hardcoded UI text may not be aligned.
+- Heartbeat-missing events may be counted as hard violations.
+- Raw proctoring events may not be separated from enforceable strikes.
+
+Possible Solution:
+- Define a single source of truth for max enforceable violations.
+- Separate raw proctoring events from candidate-facing strikes.
+- Align frontend display and backend enforcement to the same counting rules.
+- Update UI copy to show the actual enforcement threshold.
+- Add debug logging for `visibleCount`, `backendFlagCount`, `eventType`, `severity`, and `maxStrikes`.
+- Decide whether heartbeat-missing events should count toward termination.
+
+Suggested Files to Inspect:
+- `src/components/Proctoring.tsx`
+- `src/components/InterviewRoom.tsx`
+- `src/lib/store.ts`
+- `src/app/api/(ai)/ai-speak/route.ts`
+- `src/app/api/(ai)/ai-speak-stream/route.ts`
+- `src/app/api/(proctoring)/proctor-event/route.ts`
+- `src/app/api/(proctoring)/proctor-heartbeat/route.ts`
+
+---
+
+## BUG-007: Heartbeat Missing Is Treated As Severe
+
+Severity: Medium
+Area: Interview / Proctoring
+
+Business Impact:
+Technical interruptions may be interpreted as serious proctoring violations. This can unfairly affect candidate integrity reporting and scorecard interpretation.
+
+Steps to Reproduce:
+1. Start an interview.
+2. Cause or wait for missing heartbeat events.
+3. Review proctoring events and scorecard/proctoring notes.
+
+Expected Result:
+Heartbeat missing should be classified according to product intent. If caused by browser/network interruption, it should not automatically be treated as severe cheating behavior.
+
+Actual Result:
+Heartbeat missing appears to be treated as a severe proctoring violation.
+
+Possible Cause:
+AI routes may add `heartbeat_missing` proctoring events with `severity: "flag"` when heartbeat data is stale.
+
+Possible Solution:
+- Reclassify heartbeat-missing events as `warning` unless repeated/sustained.
+- Add a separate category for technical integrity issues.
+- Avoid counting heartbeat warnings as hard strikes unless configured.
+- Add UI explanation that heartbeat missing may indicate technical interruption rather than cheating.
+
+Suggested Files to Inspect:
+- `src/app/api/(ai)/ai-speak/route.ts`
+- `src/app/api/(ai)/ai-speak-stream/route.ts`
+- `src/app/api/(proctoring)/proctor-heartbeat/route.ts`
+
+---
+
+## BUG-008: Screen Sharing Allows Application Window Instead Of Entire Screen
+
+Severity: High
+Area: Interview / Screen Sharing Enforcement
+
+Business Impact:
+If full-screen sharing is required for interview integrity, allowing a single application window weakens proctoring because candidates may hide activity outside the shared window.
+
+Steps to Reproduce:
+1. Start an interview.
+2. When prompted for screen sharing, choose a single application window instead of the entire screen.
+
+Expected Result:
+If full-screen sharing is mandatory, single-window sharing should be rejected and the candidate should be prompted to share the entire screen.
+
+Actual Result:
+Sharing an application window is accepted.
+
+Possible Cause:
+The app may start screen capture without inspecting the selected display surface returned by the browser.
+
+Possible Solution:
+- Inspect `MediaStreamTrack.getSettings().displaySurface`.
+- Reject `displaySurface === "window"` or `"browser"` if full-screen sharing is required.
+- Display clear guidance: "Please share your entire screen."
+- Re-prompt until a valid full-screen source is selected.
+
+Suggested Files to Inspect:
+- `src/components/ScreenShare.tsx`
+- `src/components/InterviewRoom.tsx`
+- `src/components/Proctoring.tsx`
+
+---
+
+## BUG-009: No Camera/Microphone Device Selection Before Interview
+
+Severity: Medium
+Area: Pre-Interview Setup / Device Permissions
+
+Business Impact:
+Candidates using external webcams, microphones, headphones, or virtual audio devices may be unable to select the correct device before starting the interview.
+
+Steps to Reproduce:
+1. Open an interview link.
+2. Go through pre-interview setup.
+
+Expected Result:
+Candidate should be able to select camera and microphone devices before starting the interview.
+
+Actual Result:
+No visible camera or microphone device selection method is available.
+
+Possible Cause:
+The app may request default media devices directly without using `navigator.mediaDevices.enumerateDevices()`.
+
+Possible Solution:
+- Add a pre-interview device setup step.
+- Use `enumerateDevices()` after permission grant.
+- Allow selecting `audioinput` and `videoinput` devices.
+- Persist selected device IDs during the interview session.
+- Show microphone/camera preview or test state before interview start.
+
+Suggested Files to Inspect:
+- `src/components/InterviewRoom.tsx`
+- `src/hooks/useSTT.ts`
+- `src/components/AudioRecorder.tsx`
+- `src/components/Proctoring.tsx`
+
+---
+
+## BUG-010: Candidate Does Not Receive Email After Send Email Action
+
+Severity: High
+Area: Email / Notifications
+
+Business Impact:
+Candidates may not receive interview invites or outcome emails. This can block interview participation and reduce trust in the admin workflow.
+
+Steps to Reproduce:
+1. Trigger a Send Email action for a candidate or interview.
+2. Check candidate inbox.
+
+Expected Result:
+Candidate should receive the email, or the UI should show a clear configuration/delivery error.
+
+Actual Result:
+No email is received.
+
+Possible Cause:
+- SMTP environment variables may be missing or invalid.
+- Email sending may fail silently.
+- Local development may not be configured for real email delivery.
+- The UI may report success before confirming provider delivery.
+
+Possible Solution:
+- Validate SMTP configuration before sending.
+- Return email send status from email routes.
+- Show success/failure toast in the UI.
+- Add fallback copy-link behavior when SMTP is not configured.
+- Log provider response/errors without exposing credentials.
+
+Suggested Files to Inspect:
+- `src/lib/email.ts`
+- `src/app/api/(system)/send-outcome-email/route.ts`
+- `src/app/api/(system)/email-templates/route.ts`
+- `src/app/(platform)/new/page.tsx`
+
+---
+
+## BUG-011: "Open in Mail App" Does Not Work After Creating Interview
+
+Severity: Medium
+Area: Admin / Create Interview
+
+Business Impact:
+Admins may be unable to quickly send interview links through their local email client. This is less severe if copy-link functionality works.
+
+Steps to Reproduce:
+1. Create a new interview from the admin New Interview module.
+2. Click the "Open in mail app" action.
+
+Expected Result:
+The default email client should open with candidate email, subject, and interview link prefilled.
+
+Actual Result:
+The mail app does not open or the action does not work.
+
+Possible Cause:
+- The generated `mailto:` link may be malformed.
+- Parameters may not be URL-encoded correctly.
+- The local system may not have a default mail client configured.
+
+Possible Solution:
+- Ensure `mailto:` parameters are encoded with `encodeURIComponent`.
+- Add a copy-to-clipboard fallback.
+- Show a tooltip/toast if the mail client cannot be opened.
+- Avoid relying on local mail clients as the primary invite delivery method.
+
+Suggested Files to Inspect:
+- `src/app/(platform)/new/page.tsx`
+
+---
+
+## BUG-012: Candidate Summary Overflows In Admin Candidate Profile View
+
+Severity: Low
+Area: Admin / Candidate Profile UI
+
+Business Impact:
+Long candidate summaries can break visual layout and reduce readability in admin review screens.
+
+Steps to Reproduce:
+1. Create/update a candidate profile with a long About Me / Summary.
+2. View the candidate profile from the admin Candidates module.
+
+Expected Result:
+Long text should wrap, scroll, clamp, or remain inside the designated container.
+
+Actual Result:
+The About Me / Summary text overflows outside the designated box.
+
+Possible Cause:
+Missing CSS wrapping/overflow constraints on the summary text container.
+
+Possible Solution:
+- Add `break-words`, `whitespace-pre-wrap`, and/or `overflow-hidden`.
+- Use max height with scroll/clamp if summaries can be very long.
+- Ensure the parent container has constrained width.
+
+Suggested Files to Inspect:
+- `src/app/(platform)/admin/candidates/[id]/page.tsx`
+- `src/app/(platform)/admin/candidates/page.tsx`
+

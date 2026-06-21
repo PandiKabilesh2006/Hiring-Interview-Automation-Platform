@@ -1,0 +1,66 @@
+(node:29544) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Recommended env var not set: SONIOX_API_KEY
+Recommended env var not set: AI_API_KEY
+Recommended env var not set: SONIOX_API_KEY
+Recommended env var not set: AI_API_KEY
+Recommended env var not set: SONIOX_API_KEY
+Recommended env var not set: AI_API_KEY
+Recommended env var not set: SONIOX_API_KEY
+Recommended env var not set: AI_API_KEY
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/_not-found/page' in C:\Users\crade\Documents\hrms\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\crade\Documents\hrms\.next\server\app\_not-found\page.js', but to 'Error: Can't resolve '../../../../.next/server/app/_not-found/page' in 'C:\Users\crade\Documents\hrms\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/_not-found/page (expected C:\Users\crade\Documents\hrms\.next\server\app\_not-found\page.js)
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'C:\Users\crade\Documents\hrms\.next\server\app'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/pages/_error' in C:\Users\crade\Documents\hrms\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\crade\Documents\hrms\.next\server\pages\_error.js', but to 'Error: Can't resolve '../../../../.next/server/pages/_error' in 'C:\Users\crade\Documents\hrms\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/pages/_error (expected C:\Users\crade\Documents\hrms\.next\server\pages\_error.js)
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/pages/_app' in C:\Users\crade\Documents\hrms\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\crade\Documents\hrms\.next\server\pages\_app.js', but to 'Error: Can't resolve '../../../../.next/server/pages/_app' in 'C:\Users\crade\Documents\hrms\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/pages/_app (expected C:\Users\crade\Documents\hrms\.next\server\pages\_app.js)
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/(auth)/login/page' in C:\Users\crade\Documents\hrms\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\crade\Documents\hrms\.next\server\app\(auth)\login\page.js', but to 'Error: Can't resolve '../../../../.next/server/app/(auth)/login/page' in 'C:\Users\crade\Documents\hrms\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/(auth)/login/page (expected C:\Users\crade\Documents\hrms\.next\server\app\(auth)\login\page.js)
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/pages/_document' in C:\Users\crade\Documents\hrms\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\crade\Documents\hrms\.next\server\pages\_document.js', but to 'Error: Can't resolve '../../../../.next/server/pages/_document' in 'C:\Users\crade\Documents\hrms\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/pages/_document (expected C:\Users\crade\Documents\hrms\.next\server\pages\_document.js)
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\crade\Documents\hrms\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js

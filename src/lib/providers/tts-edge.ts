@@ -1,0 +1,49 @@
+import type { TTSProvider } from "./types";
+import { promisify } from "util";
+import { execFile } from "child_process";
+import { readFile, unlink } from "fs/promises";
+import { join } from "path";
+import { randomUUID } from "crypto";
+import os from "os";
+import fs from "fs";
+
+const execFileAsync = promisify(execFile);
+
+export class EdgeTTS implements TTSProvider {
+  name = "edge";
+  contentType = "audio/mpeg";
+
+  async synthesize(text: string): Promise<Buffer> {
+    const voice = process.env.EDGE_TTS_VOICE || "en-IN-NeerjaNeural";
+    const rate = process.env.EDGE_TTS_RATE || "+10%";
+    const tmpFile = join(os.tmpdir(), `edge-tts-${randomUUID()}.mp3`);
+
+    let cmd = "edge-tts";
+    if (process.platform === "win32") {
+      const appData = process.env.APPDATA || join(os.homedir(), "AppData", "Roaming");
+      const localCmd = join(appData, "Python", "Python312", "Scripts", "edge-tts.exe");
+      if (fs.existsSync(localCmd)) {
+        cmd = localCmd;
+      }
+    }
+
+    try {
+      await execFileAsync(cmd, [
+        "--voice", voice,
+        "--rate", rate,
+        "--pitch=-6Hz",
+        "--text", text,
+        "--write-media", tmpFile,
+      ], { timeout: 15000 });
+
+      return await readFile(tmpFile);
+    } catch (err: any) {
+      if (err.code === "ENOENT") {
+        throw new Error("edge-tts CLI is not installed. Please run `pip install edge-tts` in your terminal.");
+      }
+      throw err;
+    } finally {
+      unlink(tmpFile).catch(() => {});
+    }
+  }
+}

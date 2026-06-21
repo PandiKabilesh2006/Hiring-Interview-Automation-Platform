@@ -1,0 +1,11 @@
+
+> ai-interview-platform@1.0.0 dev
+> node server-custom.js
+
+> STT WebSocket proxy active on /api/stt-ws (soniox)
+> Ready on http://0.0.0.0:3001
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 717ms (219 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 3.9s (636 modules)
+ GET /login?callbackUrl=%2F 200 in 4060ms

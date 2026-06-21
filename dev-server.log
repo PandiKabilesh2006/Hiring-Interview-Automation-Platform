@@ -1,0 +1,73 @@
+
+> ai-interview-platform@1.0.0 dev
+> node server-custom.js
+
+> STT WebSocket proxy active on /api/stt-ws (soniox)
+> Ready on http://0.0.0.0:3000
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 876ms (219 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1482ms (622 modules)
+ GET /login?callbackUrl=%2F 200 in 1662ms
+ GET /login?callbackUrl=%2F 200 in 73ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 2.1s (574 modules)
+ GET /api/auth/session 200 in 2813ms
+ GET /api/auth/session 200 in 43ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.9s (879 modules)
+ GET /api/dashboard/distributions 404 in 3157ms
+ GET /api/dashboard/distributions 404 in 30ms
+ GET /api/dashboard/distributions 404 in 42ms
+ GET /api/dashboard/distributions 404 in 86ms
+ GET /api/dashboard/distributions 404 in 63ms
+ GET /api/dashboard/distributions 404 in 25ms
+   Reload env: .env.local
+ ✓ Compiled in 252ms (844 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.3s (852 modules)
+ GET /api/dashboard/distributions 404 in 2676ms
+ GET /_next/static/css/app/layout.css?v=1780299722137 404 in 108ms
+ GET /_next/static/css/app/layout.css?v=1780299722137 404 in 69ms
+ GET /login?callbackUrl=%2F 200 in 84ms
+ GET /_next/static/css/app/layout.css?v=1780299729964 404 in 31ms
+ GET /_next/static/chunks/main-app.js?v=1780299729964 404 in 62ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 41ms
+ GET /_next/static/chunks/app/(auth)/login/page.js 404 in 51ms
+ GET /_next/static/chunks/app/layout.js 404 in 73ms
+ GET /_next/static/chunks/app/not-found.js 404 in 50ms
+ GET /login?callbackUrl=%2F 200 in 50ms
+ GET /_next/static/css/app/layout.css?v=1780299735876 404 in 34ms
+ GET /_next/static/chunks/main-app.js?v=1780299735876 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1780299735876 404 in 57ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 64ms
+ GET /_next/static/chunks/app/(auth)/login/page.js 404 in 59ms
+ GET /_next/static/chunks/app/layout.js 404 in 58ms
+ GET /_next/static/chunks/app/not-found.js 404 in 34ms
+ GET /login?callbackUrl=%2F 404 in 30ms
+ GET /login?callbackUrl=%2F 404 in 30ms
+ GET /login?callbackUrl=%2F 404 in 30ms
+ GET /login?callbackUrl=%2F 404 in 28ms
+ GET /login?callbackUrl=%2F 404 in 29ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 26ms
+ GET /login?callbackUrl=%2F 404 in 27ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 23ms
+ GET /login?callbackUrl=%2F 404 in 25ms
+ GET /login?callbackUrl=%2F 404 in 24ms
+ GET /login?callbackUrl=%2F 404 in 12ms
+ GET /login?callbackUrl=%2F 404 in 14ms
+ GET /login?callbackUrl=%2F 404 in 12ms
+ GET /login?callbackUrl=%2F 404 in 20ms
+ GET /login?callbackUrl=%2F 404 in 14ms
+ GET /login?callbackUrl=%2F 404 in 37ms
+ GET /login?callbackUrl=%2F 404 in 30ms
+ GET /login?callbackUrl=%2F 404 in 34ms
+ GET /login?callbackUrl=%2F 404 in 30ms
+ GET /login?callbackUrl=%2F 404 in 27ms
+ GET /login?callbackUrl=%2F 404 in 23ms
+ GET /login?callbackUrl=%2F 404 in 26ms

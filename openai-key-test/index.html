@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAI API Key Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 760px;
+        margin: 48px auto;
+        padding: 0 20px;
+        color: #172033;
+      }
+      button {
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        padding: 12px 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      pre {
+        margin-top: 20px;
+        background: #f5f7fb;
+        border: 1px solid #d9e1ef;
+        border-radius: 8px;
+        padding: 16px;
+        white-space: pre-wrap;
+      }
+      .hint {
+        color: #5b677d;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>OpenAI API Key Test</h1>
+    <p class="hint">
+      This tiny app reads <code>AI_API_KEY</code> from the parent project's <code>.env.local</code> on the server.
+      The key is not sent to the browser.
+    </p>
+    <button id="testBtn">Test API Key</button>
+    <pre id="result">Click the button to test.</pre>
+
+    <script>
+      const btn = document.getElementById("testBtn");
+      const result = document.getElementById("result");
+
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        result.textContent = "Testing...";
+        try {
+          const res = await fetch("/api/test-openai");
+          const data = await res.json();
+          result.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          result.textContent = `Request failed: ${error.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
