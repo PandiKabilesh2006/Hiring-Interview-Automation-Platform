@@ -18,6 +18,15 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Accept Clerk publishable key from Railway build arguments (so it is hardcoded in the client bundle)
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+# Provide dummy build-time variables for server-only config to prevent prerender crashes
+ENV DATABASE_URL="postgresql://mock:mock@localhost:5432/mock"
+ENV NEXTAUTH_SECRET="mock_secret"
+ENV CLERK_SECRET_KEY="sk_test_mock"
+
 RUN npm run build
 
 # Stage 3: Production runner
