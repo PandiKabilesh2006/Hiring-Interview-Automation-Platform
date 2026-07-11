@@ -1,3 +1,4 @@
+// Cache invalidation to force rebuild with correct env keys
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
