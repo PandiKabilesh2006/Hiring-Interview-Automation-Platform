@@ -17,7 +17,7 @@ if (fs.existsSync(envPath)) {
     const k = t.substring(0, eq).trim();
     let v = t.substring(eq + 1).trim();
     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (!process.env[k]) process.env[k] = v;
+    if (!process.env[k] || k === "PORT") process.env[k] = v;
   }
 }
 
