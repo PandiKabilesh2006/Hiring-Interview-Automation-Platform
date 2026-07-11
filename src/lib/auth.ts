@@ -181,7 +181,24 @@ export async function getOrSyncUser(clerkUserId: string) {
     );
     
     return refetched.rows[0] || null;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "23505" || error?.constraint === "users_clerk_id_key") {
+      console.log(`User ${clerkUserId} was synced concurrently by another request. Fetching from database...`);
+      try {
+        const refetched = await pool.query(
+          `SELECT u.id, u.email, u.name, u.role, u.org_id, o.name as org_name
+           FROM users u
+           JOIN organizations o ON u.org_id = o.id
+           WHERE u.clerk_id = $1`,
+          [clerkUserId]
+        );
+        if (refetched.rows.length > 0) {
+          return refetched.rows[0];
+        }
+      } catch (refetchError) {
+        console.error("Error refetching concurrently synced user:", refetchError);
+      }
+    }
     console.error("Error syncing user from Clerk dynamically:", error);
     return null;
   }
