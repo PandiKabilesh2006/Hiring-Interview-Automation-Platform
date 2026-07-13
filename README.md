@@ -1,193 +1,376 @@
-# AI Interview Platform (hros-v1) - Comprehensive Developer Guide
+# AI-Driven Hiring & Interview Automation Platform (HRMS-v1)
 
-Welcome to the AI Interview Platform! This document serves as both a Product Requirements Document (PRD) and an extensive Developer Onboarding Guide. It is designed to help new developers understand the architecture, setup the project, and effectively test complex modules like real-time proctoring and WebSockets.
+An enterprise-grade, automated hiring platform that streamlines recruitment workflows by integrating Applicant Tracking System (ATS) resume evaluation, a real-time conversational AI interviewer ("Alex"), and a multi-layered computer vision proctoring engine.
 
 > [!NOTE]
-> **Live Application:** [hiring-interview-automation-platform-production.up.railway.app](https://hiring-interview-automation-platform-production.up.railway.app)
->
-> **Demo Video:** [Watch the Demo Video](./HRMS%20Demo%20Video.mp4)
+> **Live Application Portal:** [hiring-interview-automation-platform-production.up.railway.app](https://hiring-interview-automation-platform-production.up.railway.app)
+> 
+> **Interactive Walkthrough:** [Watch the Platform Demo Video](https://drive.google.com/file/d/1lG6VlSSa4HKf5UkaFFrakJJlvdGmSyQf/view?usp=sharing)
 
 ---
 
-## Table of Contents
-1. [Product Overview & Goals](#1-product-overview--goals)
-2. [System Architecture](#2-system-architecture)
-3. [Directory Structure & Key Files](#3-directory-structure--key-files)
-4. [Local Development Setup](#4-local-development-setup)
-5. [Testing & Debugging Guide](#5-testing--debugging-guide)
-6. [Deep Dive: Core Modules](#6-deep-dive-core-modules)
-7. [Troubleshooting](#7-troubleshooting)
+## 📖 Table of Contents
+1. [Product Features & User Flows](#-product-features--user-flows)
+2. [System Architecture & Core Modules](#-system-architecture--core-modules)
+3. [Relational Database Schema](#-relational-database-schema)
+4. [API Reference Directory](#-api-reference-directory)
+5. [QA & Debugging Logs](#-qa--debugging-logs)
+6. [Local Development Setup](#-local-development-setup)
+7. [Deployment & Production Guidelines](#-deployment--production-guidelines)
 
 ---
 
-## 1. Product Overview & Goals
-The AI Interview Platform is an automated, AI-driven voice interview system designed to screen, interview, and evaluate candidates autonomously. It streamlines the hiring process by combining ATS (Applicant Tracking System) resume parsing, real-time conversational AI, automated scoring, and candidate proctoring into a single cohesive platform.
+## 🚀 Product Features & User Flows
 
-**Core Features:**
-* **Automate Initial Screening:** Automatically filter candidates based on ATS resume scoring before an interview link is even generated.
-* **Standardize Interviews:** Provide a consistent, unbiased interview experience using an AI persona ("Alex") with adaptive question difficulty and domain-specific knowledge.
-* **Reduce Time-to-Hire:** Evaluate candidates instantly via AI-generated scorecards detailing strengths, weaknesses, transcript evidence, and a final recommendation.
-* **Ensure Interview Integrity:** Monitor candidate behavior through automated proctoring (webcam snapshots, tab switching detection) during the interview session.
+The platform supports two primary target audiences (Recruiters and Candidates) and integrates autonomous AI agents to manage evaluation and interview integrity:
 
----
+### 💼 1. Recruiter & Administrator Portal
+* **Dashboard Control:** Direct overview of active jobs, aggregate candidate application metrics, and proctoring violation alerts.
+* **Job & Round Customization:** Create and configure roles, adjust ATS matching thresholds, customize candidate invitation email templates, and define targeted interview focus areas (e.g. Frontend, System Design, General Coding).
+* **Detailed AI Scorecard Analytics:** View generated candidate transcripts, structured core-competency breakdown, specific strengths/weaknesses evidence, and AI recommendations.
+* **Candidate Comparison Matrix:** Interactively compare multiple candidates side-by-side on technical skills, communication, and proctoring risk ratings.
 
-## 2. System Architecture
+### 👤 2. Candidate Portal & Dashboard
+* **Job Board:** Access organization-specific job listings, review role requirements, location tags, and compensation.
+* **Application Tracker:** Submit applications via PDF, DOCX, or TXT resume parsing, and track real-time hiring lifecycle status (`Applied` → `ATS Failed` → `Interview Scheduled` → `Interview In Progress` → `Interview Completed` → `Selected/Rejected`).
+* **Profile Management:** Manage personal bio, github profiles, portfolio URLs, and keep resumes up to date.
 
-### Tech Stack
-* **Frontend:** Next.js (React), Tailwind CSS, `@monaco-editor/react`.
-* **Backend:** Next.js App Router API Routes (`/api/*`), Custom Node.js Server (`server-custom.js`).
-* **Database:** PostgreSQL (via `pg` pool).
-* **AI / ML / Audio:**
-  * **LLMs:** Juspay AI / GPT-4o / Kimi for interview logic, resume parsing, and scorecard generation.
-  * **STT (Speech-to-Text):** WebSocket streaming proxy to Soniox, Deepgram, or Sarvam.
-  * **TTS (Text-to-Speech):** Edge TTS via Python CLI wrapper.
-  * **Computer Vision (Proctoring):** MediaPipe Vision Tasks (Face Detection, Object Detection) running in-browser via WebAssembly.
+### 🤖 3. Real-Time Conversational AI Interviewer ("Alex")
+* **Voice-First Experience:** Dynamic web-based voice interface simulating a face-to-face screening.
+* **Adaptive Prompting:** Uses stateful conversational AI nodes leveraging LLMs (OpenAI/Kimi) to adjust question difficulty dynamically according to candidate response performance.
 
-### The Custom Server (`server-custom.js`)
-Next.js alone does not natively support handling WebSocket upgrades on the same port easily in production. We use a custom Node.js wrapper:
-* **In Dev:** Runs a standard Node `http.createServer`, passes requests to Next.js, and catches WS upgrades on `/api/stt-ws`.
-* **In Prod:** Monkey-patches Next.js's internal server creation, injecting our WebSocket proxy logic to allow STT streaming over the exact same port without a separate microservice.
-
----
-
-## 3. Directory Structure & Key Files
-
-* `server-custom.js`: Entry point. Handles ENV loading, DB pooling, and the WebSocket STT proxy.
-* `src/components/Proctoring.tsx`: The client-side brain for anti-cheat. Uses MediaPipe to track gaze, phones, and face presence.
-* `src/lib/parse-scorecard.ts`: Contains an 8-stage repair mechanism to aggressively sanitize and parse malformed JSON returned by LLMs.
-* `src/lib/providers/tts-edge.ts`: Integrates with the `edge-tts` python CLI to generate MP3 speech buffers.
-* `src/app/api/(candidate)/parse-resume/route.ts`: Extracts text from PDF (`pdf-parse`), DOCX (`mammoth`), and TXT, then queries an LLM to extract JSON metadata (Name, Email, Phone, etc.).
-* `src/app/(platform)/new/page.tsx`: The interview creation UI. Combines resume upload, ATS thresholds, candidate details, and question bank configuration.
+### 🛡️ 4. Anti-Cheat & Proctoring Engine
+* **Client-Side Computer Vision:** MediaPipe Vision Tasks running in-browser WebAssembly to detect:
+  * *Gaze Tracking:* Triggers an alert if a candidate repeatedly turns away from the screen (modeled via BlazeFace keypoints filtered through a fast-reaction Exponential Moving Average).
+  * *Phone Detection:* ObjectDetector (EfficientDet-Lite0) tracks cell phone presence.
+  * *Face Counts:* Detects missing or multiple faces in the video frame.
+* **Browser Sandbox Tracking:** Monitors tab switching (document visibility api), screen share terminations, and clipboard paste events.
+* **Heartbeat & Event Severity Log:** Regularly transmits heartbeats and registers proctoring infractions (`flag`, `warning`, `info`) complete with base64 WebP photographic evidence.
+* **Resilient Fallbacks:** Fallback to client-side canvas-based pixel-brightness block analysis when the primary ML models fail to load or initialize.
 
 ---
 
-## 4. Local Development Setup
+## ⚙️ System Architecture & Core Modules
 
-### Prerequisites
-1. **Node.js** (v18+ recommended)
-2. **Python** (v3.8+ required for Edge TTS)
-3. **PostgreSQL** Database (Local or Cloud)
+The application is built on a custom Node.js server wrapper surrounding a Next.js framework, accommodating concurrent WebSocket connections and Next.js routing over a unified port.
 
-### Step-by-Step
-1. **Install Node Dependencies:**
+### Component Interaction Flow
+
+```mermaid
+graph TD
+    subgraph Client ["Candidate Browser"]
+        React["Next.js React Frontend"]
+        MP["MediaPipe WASM (Gaze/Phone)"]
+        React -->|Video Frames| MP
+    end
+
+    subgraph Backend ["Next.js & Custom Server (server-custom.js)"]
+        HttpSrv["HTTP / WebSocket Server"]
+        NextApi["Next.js App API Routes"]
+        STTProxy["STT WebSocket Proxy"]
+        TTS["Edge-TTS (Python CLI)"]
+        Parser["8-Stage Scorecard Parser"]
+        
+        HttpSrv -->|Standard HTTP| NextApi
+        HttpSrv -->|WS Upgrade /api/stt-ws| STTProxy
+        NextApi -->|Subprocess Invocation| TTS
+        NextApi -->|Sanitize LLM Output| Parser
+    end
+
+    subgraph Data ["Data Storage"]
+        DB[(PostgreSQL)]
+    end
+
+    subgraph ThirdParty ["External Services"]
+        LLM["AI LLMs (OpenAI / Kimi)"]
+        STT["STT Upstream (Soniox/Deepgram)"]
+    end
+
+    React -->|HTTP Requests| HttpSrv
+    React -->|WebSocket Stream| STTProxy
+    NextApi -->|Queries / Pools| DB
+    STTProxy -->|Verify Session Token| DB
+    NextApi -->|Analyze Resumes / Eval API Calls| LLM
+    STTProxy -->|Binary Audio Frames| STT
+```
+
+### Key Modules & Algorithms
+
+1. **Next.js WebSocket Proxy (`server-custom.js`):**
+   Intercepts upgrades on `/api/stt-ws`, checks candidate tokens against PostgreSQL, connects to upstream Speech-To-Text providers (Soniox, Deepgram, or Sarvam), and statefully merges sliding-window token fragments so the Next.js frontend only consumes clean `is_final` events.
+2. **Gaze EMA Filter (`Proctoring.tsx`):**
+   Traces head position based on BlazeFace keypoint coordinate variances. Implements an Exponential Moving Average (EMA) ($\alpha = 0.80$, drops to $0.40$ in low-confidence lighting environments) to smooth flickering nose-to-eye coordinates and trigger alerts when the candidate focuses away for more than 1 consecutive frame (reducing calibration overhead).
+3. **8-Stage AI Scorecard Repair (`src/lib/parse-scorecard.ts`):**
+   Aggressively sanitizes and normalizes LLM responses to avoid parsing crashes using these fallback techniques:
+   * **Stage 1:** Standard native parsing.
+   * **Stage 2:** Markdown code block trimming (removal of ` ```json ` fences).
+   * **Stage 3:** Depth-aware bracket tracking (extracts the first valid `{}` object block).
+   * **Stage 4:** General cleaning (removing placeholder `...` ellipses and trailing commas before braces).
+   * **Stage 5-6:** JSON quote translation (converting single quotes on keys and values to valid double quotes, escaping embedded quotes).
+   * **Stage 7:** Bracket reconciliation (injecting missing closing brackets/braces for truncated streams).
+   * **Stage 8:** Battle-tested `jsonrepair` package library fallback.
+
+---
+
+## 🗄️ Relational Database Schema
+
+The relational schema is configured in PostgreSQL (14+), utilizing UUID primary keys, default indexing on search keys, and cascade rules.
+
+```
+                  +-------------------+
+                  |   organizations   |
+                  +---------+---------+
+                            | 1
+                            |
+                            | 1..*
+                  +---------v---------+
+                  |       users       |
+                  +---------+---------+
+                            | 1
+                            |
+                            | 0..*
+                  +---------v---------+
+                  |       jobs        |
+                  +---------+---------+
+                            | 1
+                            |
+                            | 1..*
+                  +---------v---------+          +-----------------------+
+                  | job_applications  +----------+    ats_evaluations    |
+                  +---------+---------+ 1      1 +-----------------------+
+                            | 1
+                            |
+                            | 1
+                  +---------v---------+          +-----------------------+
+                  |  interview_tokens +----------+      interviews       |
+                  +-------------------+ 1      1 +----------+------------+
+                                                            | 1
+                                                            |
+                                           +----------------+----------------+
+                                           | 1..*                            | 1..*
+                                 +---------v---------+             +---------v---------+
+                                 | transcript_entries|             | proctoring_events |
+                                 +-------------------+             +-------------------+
+```
+
+### Table Breakdown
+
+#### `organizations`
+Defines tenant space for recruiter cohorts or candidate pools.
+* `id` (UUID, Primary Key)
+* `name` (VARCHAR)
+* `slug` (VARCHAR, Unique)
+* `logo_url` (TEXT)
+* `clerk_id` (VARCHAR, Unique)
+* `created_at`, `updated_at` (TIMESTAMPTZ)
+
+#### `users`
+Accounts for system administrators, interviewers, and candidates.
+* `id` (UUID, Primary Key)
+* `org_id` (UUID, References `organizations.id`)
+* `email` (VARCHAR, Unique)
+* `name` (VARCHAR)
+* `password_hash` (VARCHAR)
+* `role` (VARCHAR, defaults to `'interviewer'`)
+* `clerk_id` (VARCHAR, Unique)
+* `is_active` (BOOLEAN)
+* `created_at`, `updated_at` (TIMESTAMPTZ)
+
+#### `jobs`
+Positions posted by hiring managers.
+* `id` (UUID, Primary Key)
+* `org_id` (UUID, References `organizations.id`)
+* `title` (VARCHAR)
+* `description` (TEXT)
+* `requirements` (TEXT)
+* `department` (VARCHAR)
+* `location` (VARCHAR)
+* `employment_type` (VARCHAR)
+* `role_tag`, `level_tag` (VARCHAR)
+* `status` (VARCHAR, defaults to `'open'`)
+* `created_at`, `updated_at` (TIMESTAMPTZ)
+
+#### `ats_evaluations`
+Stores parse results and score matrices returned from parsing candidate resumes.
+* `id` (UUID, Primary Key)
+* `candidate_id` (UUID)
+* `job_id` (UUID, References `jobs.id`)
+* `resume_text` (TEXT)
+* `score` (DOUBLE PRECISION)
+* `label` (VARCHAR)
+* `matched_skills`, `missing_skills`, `suggestions` (JSONB)
+* `domain` (VARCHAR)
+* `skill_coverage` (DOUBLE PRECISION)
+* `explanation` (TEXT)
+* `is_global` (BOOLEAN)
+* `evaluation_source` (VARCHAR, defaults to `'llm'`)
+* `full_result` (JSONB)
+* `created_at` (TIMESTAMPTZ)
+
+#### `interviews`
+Records session metadata, metrics, and configurations for candidate assessments.
+* `id` (UUID, Primary Key)
+* `org_id` (UUID, References `organizations.id`)
+* `created_by` (UUID, References `users.id`)
+* `candidate_email`, `candidate_name`, `candidate_phone` (VARCHAR)
+* `resume` (TEXT)
+* `role`, `level` (VARCHAR)
+* `focus_areas` (TEXT ARRAY)
+* `duration` (INTEGER)
+* `round_type` (VARCHAR, defaults to `'General'`)
+* `round_number` (INTEGER)
+* `language` (VARCHAR, defaults to `'en'`)
+* `token` (VARCHAR)
+* `status` (VARCHAR, defaults to `'waiting'`)
+* `scorecard` (JSONB)
+* `scoring_status` (VARCHAR)
+* `recording_url` (TEXT)
+* `last_heartbeat_at` (TIMESTAMP)
+* `created_at`, `started_at`, `ended_at`, `expires_at` (TIMESTAMPTZ)
+
+#### `proctoring_events`
+Log files recording suspicious activities flags during candidate runs.
+* `id` (SERIAL, Primary Key)
+* `interview_id` (UUID, References `interviews.id`)
+* `type` (VARCHAR: `face_missing`, `tab_switch`, `eye_away`, `multiple_faces`, `phone_detected`, `copy_paste`, etc.)
+* `severity` (VARCHAR: `flag`, `warning`, `info`)
+* `message` (TEXT)
+* `photo` (BYTEA, contains binary WebP photos)
+* `created_at` (TIMESTAMPTZ)
+
+#### `transcript_entries`
+Sequential dialog lines exchanged during the live interview sessions.
+* `id` (SERIAL, Primary Key)
+* `interview_id` (UUID, References `interviews.id`)
+* `role` (VARCHAR: `'ai'` or `'candidate'`)
+* `text` (TEXT)
+* `created_at` (TIMESTAMPTZ)
+
+#### `job_applications`
+Orchestration connector linking candidates, postings, ATS scores, and interviews.
+* `id` (UUID, Primary Key)
+* `candidate_id` (UUID)
+* `job_id` (UUID, References `jobs.id`)
+* `ats_evaluation_id` (UUID, References `ats_evaluations.id`)
+* `interview_token_id` (UUID, References `interview_tokens.id`)
+* `status` (VARCHAR, defaults to `'applied'`)
+* `applied_at`, `updated_at` (TIMESTAMPTZ)
+
+---
+
+## 🔌 API Reference Directory
+
+### 👤 Candidate APIs
+* `GET /api/candidate/profile` - Fetches candidate demographic info, application lists, and active resumes.
+* `POST /api/candidate/profile` - Creates or updates candidate details (GitHub URL, portfolios, bio).
+* `POST /api/parse-resume` - Receives PDF/DOCX files, parses text using parser libraries, and calls LLMs to extract metadata.
+
+### 💼 Admin & Jobs APIs
+* `POST /api/jobs` - Publishes a new role and matches criteria.
+* `GET /api/jobs` - Retrieves open positions with filters.
+* `POST /api/create-interview` - Creates interview instances and hooks token generators.
+* `GET /api/interviews` - Gathers complete interviewer evaluation lists.
+
+### 🤖 Live AI Conversational APIs
+* `POST /api/ai-response` - Processes spoken/typed responses and advances conversational state.
+* `POST /api/ai-speak` - Resolves responses and formats synthesized speech triggers.
+* `POST /api/ai-speak-stream` - Returns server-sent events (SSE) containing real-time stream speech buffers.
+* `POST /api/tts` - Internal hook directly executing the python `edge-tts` client wrapper.
+
+### 🛡️ Live Proctoring APIs
+* `POST /api/proctor-event` - Enters anti-cheat infractions, saves WebP screenshots, and files alerts.
+* `POST /api/proctor-heartbeat` - Candidate-side polling to verify browser tab connectivity.
+
+---
+
+## 🔍 QA & Debugging Logs
+
+The system has undergone rigorous manual and automated QA. Below is the active tracking dashboard for identified anomalies and bug statuses:
+
+| ID | Module / Area | Summary | Severity | Status | Key Cause & Recommendation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **BUG-001** | Candidate Portal | Resume updates fail to refresh application states. | High | ⏳ Pending | File input element does not clear; reset the `onChange` pointer and trigger state refetch on profile update. |
+| **BUG-002** | Authentication | Candidate credentials are accepted via the Admin login. | Medium | ⏳ Pending | NextAuth credentials provider lacks route separation; enforce role-aware redirect filters in `middleware.ts`. |
+| **BUG-003** | Resume Upload | Support for legacy `.doc` files is missing. | Medium | ⏳ Pending | Legacy format is unsupported by Next parsing tools; restrict the UI dropzone explicitly to `.docx`, `.pdf`, and `.txt`. |
+| **BUG-004** | Interview Room | AI advances screen prompt while a candidate is still typing. | High | ⏳ Pending | Advance timer checks input element focus; reset and clear active advance timers during keyup events in the chatbox. |
+| **BUG-005** | Interview Room | AI freezes/stops responding mid-interview. | Critical | ⏳ Pending | SSE or STT WebSocket proxy disconnection fails to clear loading states; enforce fallback alert boxes to let candidates retry. |
+| **BUG-006** | Proctoring | Discrepancy between candidate infraction strike warnings and admin counts. | High | ⏳ Pending | UI strike limits don't separate raw events from strikes; consolidate strike counting constraints onto a unified DB query hook. |
+| **BUG-007** | Proctoring | Missing heartbeats are flagged as cheating behavior. | Medium | ⏳ Pending | Technical disconnects write `flag` event severities; change network dropouts to `warning` severity types. |
+| **BUG-008** | Screen Share | Candidate can share individual app windows instead of full screens. | High | ⏳ Pending | Frontend accepts browser surface handles; inspect `MediaStreamTrack.getSettings().displaySurface === 'monitor'` to enforce entire screen. |
+| **BUG-009** | Device Precheck | No camera or mic hardware selection options. | Medium | ⏳ Pending | Browser defaults used immediately; introduce a hardware selection dropdown mapping `navigator.mediaDevices.enumerateDevices()`. |
+| **BUG-010** | System / Email | Emails are not delivered. | High | ⏳ Pending | Missing SMTP variables in Dev env; implement a toast alert indicating email config status. |
+| **BUG-011** | Admin Portal | "Open in Mail App" button fails. | Medium | ⏳ Pending | Mailto query strings are not URL-safe; pass arguments through `encodeURIComponent`. |
+| **BUG-012** | Admin Portal | Long candidate bio overflow layout blocks. | Low | ⏳ Pending | Missing CSS wrapping properties; apply tailwind classes `break-words` and `overflow-hidden` to summary text containers. |
+
+---
+
+## 💻 Local Development Setup
+
+### System Prerequisites
+* **Node.js** (v18.x or above)
+* **Python 3.8+** (Required for the `edge-tts` text-to-speech engine)
+* **PostgreSQL 14+** (Local setup or database cloud instance)
+
+### 🛠️ Step-by-Step Installation
+
+1. **Clone & Install Node Packages:**
    ```bash
    npm install
    ```
-2. **Install Python Dependencies:**
-   The `edge-tts` integration relies on a python package.
+
+2. **Configure Python Speech Engine:**
+   Install the necessary text-to-speech command line module:
    ```bash
    pip install edge-tts
    ```
-   *Verify it works by running `edge-tts --version` in your terminal.*
-3. **Setup Database:**
-   Ensure you have a PostgreSQL database running. Apply your schema migrations (typically using Prisma or raw SQL scripts located in the project).
-4. **Configure Environment Variables:**
-   Create a `.env.local` file in the root directory.
+   *Verify execution path viability:*
+   ```bash
+   edge-tts --version
+   ```
+
+3. **Deploy Database Tables:**
+   Execute SQL migrations consecutively inside your local database:
+   ```bash
+   psql -U postgres -d ai_interview_platform -f migrations/001_schema.sql
+   # Execute migrations 002 through 008 in sequence
+   ```
+
+4. **Construct Environment Configuration:**
+   Create a `.env.local` or `.env` inside the workspace root:
    ```env
-   # Database
+   # Database Pool Connection
    DATABASE_URL="postgresql://postgres:password@localhost:5432/ai_interview_platform"
-   
-   # AI / LLM Integration
+
+   # LLM Endpoint Config
    AI_BASE_URL="https://api.openai.com"
    AI_API_KEY="sk-..."
    AI_MODEL="gpt-4o"
-   
-   # STT (Choose one: soniox, deepgram, sarvam)
+
+   # Speech to Text Config (Choose one: soniox, deepgram, sarvam)
    STT_PROVIDER="soniox"
-   SONIOX_API_KEY="..."
+   SONIOX_API_KEY="your-soniox-key"
+   STT_LANGUAGE="en-IN"
+
+   # Authentication Settings
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+   CLERK_SECRET_KEY="sk_test_..."
    ```
-5. **Start the Development Server:**
-   Do **NOT** use `npm run dev` if it points to `next dev`. You **must** run through the custom server to enable WebSockets!
+
+5. **Start Dev App Instance:**
+   *Important:* Use the custom server entry script to support WebSockets:
    ```bash
    node server-custom.js
    ```
-   *The app should now be running on `http://localhost:3000`.*
+   *The application will boot on `http://localhost:3000`.*
 
 ---
 
-## 5. Testing & Debugging Guide
+## 🚢 Deployment & Production Guidelines
 
-### 5.1 Debugging Proctoring (`Proctoring.tsx`)
-The proctoring module runs heavily optimized Computer Vision models. Debugging silently failing thresholds can be difficult. We built a dedicated debug mode.
-
-**How to Enable Proctoring Debug Mode:**
-1. Open the Candidate Interview View.
-2. Open Browser DevTools Console.
-3. Run: `localStorage.setItem("proctoring_debug", "true"); location.reload();`
-4. *Alternatively*, append `?proc_debug` to the URL.
-
-**What to look for in the console:**
-* **Gaze Tracking:** Look for logs like `gaze raw=0.450 smoothed=0.320 enter=0.40`. If `smoothed` exceeds `enter`, it triggers a flag. If it's not calibrating, ensure lighting is good (calibration takes 1 frame).
-* **Phone Detection:** Look for `phone model: X total detections`. It logs rejected bounding boxes (e.g., `skip: area 0.003 < 0.005`). 
-* **Brightness Fallback:** If the ML model fails to load, the system falls back to pixel-brightness block analysis to detect phone screens.
-
-### 5.2 Testing WebSocket STT (`server-custom.js`)
-To test if your STT provider is working correctly:
-1. Start the interview.
-2. Open the Network tab in DevTools -> Filter by **WS** (WebSockets).
-3. Look for the `/api/stt-ws` connection.
-4. Click the "Messages" tab. You should see binary frames going UP (audio) and JSON strings coming DOWN (transcripts).
-5. **Provider Specifics:**
-   * *Soniox:* Uses a sliding window logic. `server-custom.js` intercepts and normalizes Soniox tokens so Next.js frontend only sees standard `is_final` booleans.
-   * *Deepgram/Sarvam:* Ensure headers/protocols are being passed correctly in the proxy connection.
-
-### 5.3 Testing AI Scorecard Generation (`parse-scorecard.ts`)
-Scorecard generation is heavily prompt-dependent and LLMs often output broken JSON (e.g., Markdown wrapping, unescaped quotes, trailing commas). 
-
-**How to test the JSON parser:**
-You can create mock strings and pass them to `parseScorecardJSON(raw)`. The parser runs through 8 stages:
-1. Native parse.
-2. Markdown strip.
-3. Greedy Brace Extraction `{ ... }`.
-4. Truncated comma repair.
-5. Single quote `key` translation.
-6. Single quote `value` translation.
-7. Closing unclosed brackets.
-8. Passing the string through `jsonrepair` library.
-
-### 5.4 Testing Resume Upload & ATS
-1. Go to `/new` (Create Interview).
-2. Drag and drop a sample PDF or DOCX file.
-3. Check the DevTools Network tab for the `/api/parse-resume` response. It should successfully extract candidate metadata using `pdf-parse`/`mammoth` + LLM extraction.
-4. If the resume is poor, the ATS integration (`setAtsRejection`) will display the red rejection UI circle preventing interview creation.
-
----
-
-## 6. Deep Dive: Core Modules
-
-### The STT Proxy Logic
-Located in `server-custom.js`, `addWSProxy(server)` listens for `/api/stt-ws`.
-* It verifies the interview token against the database via `pg` pool.
-* Opens an upstream connection to the STT provider.
-* Passes Audio bytes directly to the provider.
-* Passes KeepAlive JSON to the provider (translating Next.js KeepAlive syntax to the provider's specific syntax).
-* Intercepts messages coming back. *For Soniox*, it rebuilds utterances statefully and emits `<end>` tokens as `is_final=true`.
-
-### The Proctoring State Machine
-Located in `Proctoring.tsx`.
-* **Phone Detection:** State moves from `absent` -> `suspected` (1st hit) -> `detected` (2 consecutive hits). Requires an Intersect-Over-Union (IoU) continuity to prevent false positives from flickering lights.
-* **Gaze Detection:** Calculates the ratio of the nose keypoint relative to the midpoint between the eyes. Uses an Exponential Moving Average (EMA) to prevent rapid flickering. Drops to a harsher EMA if MediaPipe reports low confidence (e.g., bad lighting).
-
----
-
-## 7. Troubleshooting
-
-**1. `Error: edge-tts CLI is not installed`**
-* **Cause:** The Node backend is trying to synthesize speech, but Python is missing.
-* **Fix:** Run `pip install edge-tts`. Ensure your system `PATH` sees the installed binary.
-
-**2. WebSocket drops after exactly 10-15 seconds of silence.**
-* **Cause:** Your STT provider is timing out because no audio is flowing.
-* **Fix:** `server-custom.js` runs a `setInterval` ping every 5s. Ensure the correct Ping JSON (`KeepAlive` or `keepalive`) is being sent for your provider.
-
-**3. MediaPipe FaceDetector fails to load on the frontend.**
-* **Cause:** WebAssembly files are blocked by ad-blockers, network policies, or missing internet.
-* **Fix:** The system automatically falls back to Chrome's native `FaceDetector` API if available. Ensure `jsDelivr` CDN is accessible.
-
-**4. Database connections are exhausted / "Too many clients".**
-* **Cause:** Fast refreshes in development mode duplicate the `pg` Pool.
-* **Fix:** `server-custom.js` sets `max: 3` connections. If the issue persists, kill the node process and restart.
-
-**5. "Resume Does Not Meet the Bar" triggers incorrectly.**
-* **Cause:** The ATS LLM prompt evaluates the resume harshly against the job role.
-* **Fix:** During testing, input highly-senior roles or bypass the ATS check in `/new/page.tsx` temporarily by commenting out the `res.status === 422` handler.
+* **WS Handshakes:** Because WebSockets are utilized on `/api/stt-ws`, reverse proxies (like Nginx, Cloudflare, or AWS ALB) must be explicitly configured to upgrade the connection protocols (`Connection: Upgrade`, `Upgrade: websocket`).
+* **Docker Builds:** The production Dockerfile builds standalone assets. Trigger the container compilation using:
+  ```bash
+  docker build -t hiring-platform-app .
+  ```
+  Ensure environment values (database URLs and API keys) are passed to the container during runtimes.
+* **KeepAlive Settings:** If running STT over slow proxies, ensure pings are sent within the standard 5-second window to prevent timeouts.
