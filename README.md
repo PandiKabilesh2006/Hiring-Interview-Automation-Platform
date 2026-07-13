@@ -2,6 +2,11 @@
 
 Welcome to the AI Interview Platform! This document serves as both a Product Requirements Document (PRD) and an extensive Developer Onboarding Guide. It is designed to help new developers understand the architecture, setup the project, and effectively test complex modules like real-time proctoring and WebSockets.
 
+> [!NOTE]
+> **Live Application:** [hiring-interview-automation-platform-production.up.railway.app](https://hiring-interview-automation-platform-production.up.railway.app)
+>
+> **Demo Video:** [Watch the Demo Video](./HRMS%20Demo%20Video.mp4)
+
 ---
 
 ## Table of Contents
